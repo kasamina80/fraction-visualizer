@@ -1,8 +1,10 @@
 'use client'
 
 import './App.css';
-import { useState, useEffect } from "react";
+import { useState, useEffect, Dispatch, SetStateAction } from "react";
 import * as Tone from 'tone';
+
+type PolySynthOrNull = Tone.PolySynth<Tone.Synth<Tone.SynthOptions>> | null;
 
 function App() {
   const metersCount = 5;
@@ -12,7 +14,7 @@ function App() {
   const [linePosition, setLinePosition] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [bpm, setBpm] = useState(80);
-  const [synth, setSynth]: [Tone.PolySynth<Tone.Synth<Tone.SynthOptions>> | null, any] = useState(null);
+  const [synth, setSynth] = useState<PolySynthOrNull>(null);
 
   // 参考文献: https://note.com/sunajiro/n/nbf9fffb2fbc0
   const baseNotes = [
@@ -39,10 +41,14 @@ function App() {
   }
 
   // Rubyの(0...n).to_aに相当する
-  const zeroToBefore = (n: number) => [...Array(n).keys()];
+  const zeroToBefore = (n: number|string) => {
+    const num = parseInt(`${n}`);
+    return [...Array(num >= 1 ? num : 1).keys()];
+  }
 
   const meterChangeHandler = (i: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newMeters = meters.map((meter, j) => ( i === j ? parseInt(e.target.value) : meter ));
+    const targetValue = parseInt(e.target.value);
+    const newMeters = meters.map((meter, j) => ( i === j ? (targetValue >= 1 ? targetValue : 1) : meter ));
     setMeters(newMeters);
   };
 
@@ -89,14 +95,16 @@ function App() {
           // 端まで達したらループ
           const newPosition = (position + dx) % boxWidth;
 
-          let notes: string[] = [];
+          const notes: string[] = [];
 
           if (position <= 0 || newPosition < position) {
             notes.push("G3", "D4");
             zeroToBefore(metersCount).forEach((i) => {
               document.getElementById(`beat-${i}-${meters[i]-1}`)?.classList.remove("glow");
               document.getElementById(`beat-${i}-0`)?.classList.add("glow");
-              notes.push(getNote(meters[i]));
+              if (enableds[i]) {
+                notes.push(getNote(meters[i]));
+              }
             });
           } else {
             zeroToBefore(metersCount).forEach((i) => {
@@ -106,7 +114,9 @@ function App() {
                 if (position < targetLeftEnd && targetLeftEnd <= newPosition) {
                   document.getElementById(`beat-${i}-${j-1}`)?.classList.remove("glow");
                   document.getElementById(`beat-${i}-${j}`)?.classList.add("glow");
-                  notes.push(getNote(meters[i]));
+                  if (enableds[i]) {
+                    notes.push(getNote(meters[i]));
+                  }
                 }
               });
 
