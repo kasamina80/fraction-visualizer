@@ -1,7 +1,7 @@
 'use client'
 
 import './App.css';
-import { useState, useEffect, Dispatch, SetStateAction } from "react";
+import { useState, useEffect } from "react";
 import * as Tone from 'tone';
 
 type PolySynthOrNull = Tone.PolySynth<Tone.Synth<Tone.SynthOptions>> | null;
