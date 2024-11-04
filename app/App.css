@@ -1,0 +1,77 @@
+.App {
+  text-align: center;
+  height: 100vh;
+  background: #000000;
+  color: #FFFFFF;
+  font-family: "Helvetica Neue", "Helvetica", "ＭＳ ゴシック", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Arial", "Yu Gothic", "Meiryo", sans-serif;
+}
+
+body {
+  margin: 0;
+}
+
+h1 {
+  margin: 0;
+  padding-top: 20px;
+}
+
+#red-line-wrapper {
+  position: relative;
+  #red-line {
+    position: absolute;
+    top: 25px;
+    left: 0;
+    width: 1px;
+    border-left: 1px solid #FF0000;
+    height: 125px;
+    z-index: 10;
+  }
+}
+
+@keyframes glow {
+  0% {
+    background-color: rgba(255, 255, 255, 1);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 1);
+  }
+  50% {
+    background-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0px rgba(255, 255, 255, 0.1);
+  }
+  100% {
+    background-color: rgba(255, 255, 255, 0);
+    box-shadow: 0 0 0px rgba(255, 255, 255, 0);
+  }
+}
+
+.glow:not(.disabled) {
+  animation: glow 1s 1 forwards;
+}
+
+.meter-row {
+  height: 25px;
+  display: flex;
+  .input-wrapper {
+    width: 160px;
+    display: flex;
+    justify-content: right;
+    .enabled {
+      width: 25%;
+    }
+    .denominator {
+      width: 50%;
+    }
+  }
+  .beats-wrapper {
+    flex-grow: 1;
+    display: flex;
+    padding-right: 80px;
+    .beat {
+      flex-grow: 1;
+      border: 1px solid;
+      &.disabled {
+        color: #404040;
+        background-color: #808080;
+      }
+    }
+  }
+}

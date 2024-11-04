@@ -1,101 +1,190 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import './App.css';
+import { useState, useEffect } from "react";
+import * as Tone from 'tone';
+
+function App() {
+  const metersCount = 5;
+
+  const [meters, setMeters] = useState([7, 5, 3, 1, 1]);
+  const [enableds, setEnableds] = useState([true, true, true, false, false]);
+  const [linePosition, setLinePosition] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [bpm, setBpm] = useState(80);
+  const [synth, setSynth]: [Tone.PolySynth<Tone.Synth<Tone.SynthOptions>> | null, any] = useState(null);
+
+  // 参考文献: https://note.com/sunajiro/n/nbf9fffb2fbc0
+  const baseNotes = [
+    "",
+    "D4", "A4", "B4", "D5",
+    "F#5", "A5", "C#6", "D6",
+    "E6", "F#6", "A6", "B6", "C#7",
+    "E7", "F#7", "A7"
+  ]; 
+
+  const getNote = (meter: number) => {
+    if (meter <= 16) {
+      return baseNotes[meter];
+    } else {
+      // 8-12が6, 13-17が7, ...
+      const octave = Math.floor((meter - 8) / 5) + 6;
+      const key = ["C#", "E", "F#", "A", "B"][(meter - 8) % 5];
+      return `${key}${octave}`;
+    }
+  }
+
+  const play = (notes: string[]) => {
+    synth!.triggerAttackRelease(notes, "8n"); 
+  }
+
+  // Rubyの(0...n).to_aに相当する
+  const zeroToBefore = (n: number) => [...Array(n).keys()];
+
+  const meterChangeHandler = (i: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newMeters = meters.map((meter, j) => ( i === j ? parseInt(e.target.value) : meter ));
+    setMeters(newMeters);
+  };
+
+  const enabledChangeHandler = (i: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEnableds = enableds.map((enabled, j) => ( i === j ? e.target.checked : enabled ));
+    setEnableds(newEnableds);
+  };
+
+  const bpmChangeHandler = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setBpm(parseInt(e.target.value));
+  };
+
+  const playHandler = () => {
+    setIsPlaying(prevState => !prevState);
+  };
+
+  // シンセ設定
+  useEffect(() => {
+    // シンセサイザーを初期化
+    const newSynth = new Tone.PolySynth();
+    newSynth.toDestination();
+    setSynth(newSynth);
+    
+    // クリーンアップ
+    return () => {
+      if (newSynth) {
+        newSynth.dispose();
+      }
+    };
+  }, []);
+
+  let interval: ReturnType<typeof setTimeout>;
+  useEffect(() => {
+    const dt = 0.04;
+    const period = 60.0 / bpm * 4;
+    const dxRatio = dt / period;
+    const redLineWrapperWidth = window.getComputedStyle(document.getElementById("red-line-wrapper")!)["width"];
+    const boxWidth = Number(redLineWrapperWidth.replace("px", ""));
+    const dx = dxRatio * boxWidth;
+    console.log(dt, period, dxRatio, boxWidth, dx);
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setLinePosition((position) => {
+          // 端まで達したらループ
+          const newPosition = (position + dx) % boxWidth;
+
+          let notes: string[] = [];
+
+          if (position <= 0 || newPosition < position) {
+            notes.push("G3", "D4");
+            zeroToBefore(metersCount).forEach((i) => {
+              document.getElementById(`beat-${i}-${meters[i]-1}`)?.classList.remove("glow");
+              document.getElementById(`beat-${i}-0`)?.classList.add("glow");
+              notes.push(getNote(meters[i]));
+            });
+          } else {
+            zeroToBefore(metersCount).forEach((i) => {
+              zeroToBefore(meters[i]).forEach((j) => {
+                // JSでは全ての数値はdouble型である
+                const targetLeftEnd = j / meters[i] * boxWidth;
+                if (position < targetLeftEnd && targetLeftEnd <= newPosition) {
+                  document.getElementById(`beat-${i}-${j-1}`)?.classList.remove("glow");
+                  document.getElementById(`beat-${i}-${j}`)?.classList.add("glow");
+                  notes.push(getNote(meters[i]));
+                }
+              });
+
+              if (meters[i] === 1) {
+                // 1拍子がクラスを削除した直後に同じ要素に追加するため追加処理が走らず光らないため
+                // 1拍子に対しては特殊な処理を用意する
+                const targetMiddle = 0.5 * boxWidth;
+                if (position < targetMiddle && targetMiddle <= newPosition) {
+                  document.getElementById(`beat-${i}-0`)?.classList.remove("glow");
+                }
+              }
+            });
+          }
+
+          play(notes);
+
+          return newPosition;
+        });
+      }, dt * 1000);
+    }
+
+    return () => {
+      clearInterval(interval);
+      setLinePosition(0);
+      Array.from(document.querySelectorAll(".beat")).forEach((element) => {
+        element.classList.remove("glow");
+      });
+    }
+  }, [isPlaying, meters, enableds, bpm]);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="App">
+      <h1>分数ビジュアライザ</h1>
+      <div className="meter-row">
+        <div className="input-wrapper">
+          <label className="enabled">有効</label>
+          <label className="denominator">分母</label>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        <div className="beats-wrapper" id="red-line-wrapper">
+          <div id="red-line" style={{ left: `${linePosition}px`}}></div>
+        </div>
+      </div>
+      {
+        zeroToBefore(metersCount).map((i) => {
+          const meter = meters[i];
+          const enabled = enableds[i];
+          return (
+            <div key={`meter-row-${i}`} className="meter-row">
+              <div className="input-wrapper">
+                <input type="checkbox" checked={enabled} onChange={enabledChangeHandler(i)}></input>
+                <input type="number" value={meter} min={1} disabled={!enabled} className="denominator" onChange={meterChangeHandler(i)}></input>
+              </div>
+              <div className="beats-wrapper">
+                {
+                  zeroToBefore(meter).map((j) => (
+                    <div key={`beat-${i}-${j}`} id={`beat-${i}-${j}`} className={`beat ${enabled ? "" : "disabled"}`} data-beat={`${meter}`}></div>
+                  ))
+                }
+              </div>
+            </div>
+          );
+        })
+      }
+      <div id="start-button-line">
+        <button onClick={playHandler} className={`${isPlaying ? "active" : ""}`}>START/STOP</button>
+        <select onChange={bpmChangeHandler} value={bpm}>
+          {
+            zeroToBefore(15).map((i: number) => {
+              const bpm = (i + 2) * 10;
+              return (
+                <option key={bpm} value={bpm}>{bpm}</option>
+              )
+            })
+          }
+        </select>
+      </div>
     </div>
   );
 }
+
+export default App;
