@@ -9,7 +9,7 @@ type PolySynthOrNull = Tone.PolySynth<Tone.Synth<Tone.SynthOptions>> | null;
 function App() {
   const metersCount = 5;
 
-  const [meters, setMeters] = useState([7, 5, 3, 1, 1]);
+  const [meters, setMeters] = useState(["3", "4", "5", "", ""]);
   const [enableds, setEnableds] = useState([true, true, true, false, false]);
   const [linePosition, setLinePosition] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -104,27 +104,29 @@ function App() {
           if (position <= 0 || newPosition < position) {
             notes.push("G3", "D4");
             zeroToBefore(metersCount).forEach((i) => {
-              document.getElementById(`beat-${i}-${meters[i]-1}`)?.classList.remove("glow");
+              const meter = parseIntOrOne(meters[i]);
+              document.getElementById(`beat-${i}-${meter-1}`)?.classList.remove("glow");
               document.getElementById(`beat-${i}-0`)?.classList.add("glow");
               if (enableds[i]) {
-                notes.push(getNote(meters[i]));
+                notes.push(getNote(meter));
               }
             });
           } else {
             zeroToBefore(metersCount).forEach((i) => {
-              zeroToBefore(meters[i]).forEach((j) => {
+              const meter = parseIntOrOne(meters[i]);
+              zeroToBefore(meter).forEach((j) => {
                 // JSでは全ての数値はdouble型である
-                const targetLeftEnd = j / meters[i] * boxWidth;
+                const targetLeftEnd = j / meter * boxWidth;
                 if (position < targetLeftEnd && targetLeftEnd <= newPosition) {
                   document.getElementById(`beat-${i}-${j-1}`)?.classList.remove("glow");
                   document.getElementById(`beat-${i}-${j}`)?.classList.add("glow");
                   if (enableds[i]) {
-                    notes.push(getNote(meters[i]));
+                    notes.push(getNote(meter));
                   }
                 }
               });
 
-              if (meters[i] === 1) {
+              if (meter === 1) {
                 // 1拍子がクラスを削除した直後に同じ要素に追加するため追加処理が走らず光らないため
                 // 1拍子に対しては特殊な処理を用意する
                 const targetMiddle = 0.5 * boxWidth;
@@ -165,13 +167,13 @@ function App() {
       </div>
       {
         zeroToBefore(metersCount).map((i) => {
-          const meter = meters[i];
+          const meter = parseIntOrOne(meters[i]);
           const enabled = enableds[i];
           return (
             <div key={`meter-row-${i}`} className="meter-row">
               <div className="input-wrapper">
                 <input type="checkbox" checked={enabled} onChange={enabledChangeHandler(i)}></input>
-                <input type="number" value={meter} min={1} disabled={!enabled} className="denominator" onChange={meterChangeHandler(i)}></input>
+                <input type="string" value={coerceToIntOrEmpty(meter)} disabled={!enabled} className="denominator" onChange={meterChangeHandler(i)}></input>
               </div>
               <div className="beats-wrapper">
                 {
