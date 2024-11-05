@@ -46,6 +46,10 @@ function App() {
     return [...Array(num >= 1 ? num : 1).keys()];
   }
 
+  const parseIntOrOne = (str: string) => parseInt(str) >= 1 ? parseInt(str) : 1;
+
+  const coerceToIntOrEmpty = (str: string) => parseInt(str) >= 1 ? parseInt(str) : "";
+
   const meterChangeHandler = (i: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const targetValue = parseInt(e.target.value);
     const newMeters = meters.map((meter, j) => ( i === j ? (targetValue >= 1 ? targetValue : 1) : meter ));
