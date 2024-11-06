@@ -173,7 +173,7 @@ function App() {
             <div key={`meter-row-${i}`} className="meter-row">
               <div className="input-wrapper">
                 <input type="checkbox" checked={enabled} onChange={enabledChangeHandler(i)}></input>
-                <input type="string" value={coerceToIntOrEmpty(meter)} disabled={!enabled} className="denominator" onChange={meterChangeHandler(i)}></input>
+                <input type="string" value={coerceToIntOrEmpty(meters[i])} disabled={!enabled} className="denominator" onChange={meterChangeHandler(i)}></input>
               </div>
               <div className="beats-wrapper">
                 {
