@@ -51,7 +51,7 @@ function App() {
   const coerceToIntOrEmpty = (str: string) => parseInt(str) >= 1 ? parseInt(str) : "";
 
   const meterChangeHandler = (i: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    const targetValue = parseInt(e.target.value);
+    const targetValue: string = e.target.value;
     const newMeters = meters.map((meter, j) => ( i === j ? `${coerceToIntOrEmpty(targetValue)}` : meter ));
     setMeters(newMeters);
   };
