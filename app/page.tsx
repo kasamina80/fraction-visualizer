@@ -52,7 +52,7 @@ function App() {
 
   const meterChangeHandler = (i: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const targetValue = parseInt(e.target.value);
-    const newMeters = meters.map((meter, j) => ( i === j ? (targetValue >= 1 ? targetValue : 1) : meter ));
+    const newMeters = meters.map((meter, j) => ( i === j ? coerceToIntOrEmpty(targetValue) : meter ));
     setMeters(newMeters);
   };
 
