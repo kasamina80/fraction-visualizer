@@ -74,6 +74,8 @@ function App() {
     // シンセサイザーを初期化
     const newSynth = new Tone.PolySynth();
     newSynth.toDestination();
+    // 最大7つの音が鳴るのでlog_10(7)*2≒17(dB)下げる
+    newSynth.volume.value = -17;
     setSynth(newSynth);
     
     // クリーンアップ
@@ -92,7 +94,7 @@ function App() {
     const redLineWrapperWidth = window.getComputedStyle(document.getElementById("red-line-wrapper")!)["width"];
     const boxWidth = Number(redLineWrapperWidth.replace("px", ""));
     const dx = dxRatio * boxWidth;
-    console.log(dt, period, dxRatio, boxWidth, dx);
+
     if (isPlaying) {
       interval = setInterval(() => {
         setLinePosition((position) => {
@@ -137,7 +139,9 @@ function App() {
             });
           }
 
-          play(notes);
+          if (notes.length > 0) {
+            play(notes);
+          }
 
           return newPosition;
         });
