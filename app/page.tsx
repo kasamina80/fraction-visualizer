@@ -75,7 +75,7 @@ function App() {
 
   const intArrayToStringArray = (array: number[]) => array.map((num) => `${num}`);
 
-  const padArray = (array: any[], length = metersCount) => {
+  const padArray = (array: any[], length = metersCount) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     if (array.length >= metersCount) {
       return array;
     } else {
@@ -83,7 +83,7 @@ function App() {
     }
   }
 
-  const swap = (array: any[], from: number, to: number) => {
+  const swap = (array: any[], from: number, to: number) => { // eslint-disable-line @typescript-eslint/no-explicit-any
     const new_array = [...array];
     [new_array[from], new_array[to]] = [new_array[to], new_array[from]];
     return new_array;
@@ -118,7 +118,7 @@ function App() {
     const randomNums: number[] = [];
 
     while(randomNums.length < count && randomNums.length < max - 1) {
-      let num = Math.floor(Math.random() * (max - 2 + 1)) + 2;
+      const num = Math.floor(Math.random() * (max - 2 + 1)) + 2;
       if(!randomNums.includes(num)) {
         randomNums.push(num);
       }
