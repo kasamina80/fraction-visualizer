@@ -16,6 +16,29 @@ function App() {
   const [bpm, setBpm] = useState(80);
   const [synth, setSynth] = useState<PolySynthOrNull>(null);
 
+  const beatPresets = [
+    [ // 1個
+      [2], [3], [4], [5]
+    ],
+    [ // 2個
+      [2, 4], [2, 6], [2, 3], [2, 5], [2, 7], [2, 12],
+      [3, 6], [3, 4], [3, 5], [4, 5], [5, 6], [3, 7], [5, 7]
+    ],
+    [ // 3個
+      [2, 2, 8], [2, 4, 8], [2, 4, 6], [2, 3, 4], [2, 3, 6],
+      [2, 4, 5], [2, 3, 5], [3, 6, 9], [3, 4, 6], [3, 4, 5],
+      [4, 5, 6], [2, 3, 7], [3, 6, 8], [3, 5, 7]
+    ],
+    [ // 4個
+      [2, 3, 4, 6], [2, 4, 6, 8], [2, 3, 6, 9], [2, 4, 8, 12],
+      [2, 3, 4, 5], [3, 4, 5, 6], [3, 4, 8, 12], [2, 3, 6, 7],
+      [2, 3, 5, 7], [3, 5, 7, 11]
+    ],
+    [ // 5個
+      [2, 3, 4, 5, 6], [2, 4, 6, 8, 10], [2, 3, 5, 7, 11]
+    ]
+  ]
+
   // 参考文献: https://note.com/sunajiro/n/nbf9fffb2fbc0
   const baseNotes = [
     "",
@@ -48,11 +71,27 @@ function App() {
 
   const parseIntOrOne = (str: string) => parseInt(str) >= 1 ? parseInt(str) : 1;
 
-  const coerceToIntOrEmpty = (str: string) => parseInt(str) >= 1 ? `${parseInt(str)}` : "";
+  const coerceToNumericOrEmpty = (str: string) => parseInt(str) >= 1 ? `${parseInt(str)}` : "";
+
+  const intArrayToStringArray = (array: number[]) => array.map((num) => `${num}`);
+
+  const padArray = (array: any[], length = metersCount) => {
+    if (array.length >= metersCount) {
+      return array;
+    } else {
+      return Array.from({ ...array, length: length }).map((val) => val ? val : "" );
+    }
+  }
+
+  const swap = (array: any[], from: number, to: number) => {
+    const new_array = [...array];
+    [new_array[from], new_array[to]] = [new_array[to], new_array[from]];
+    return new_array;
+  }
 
   const meterChangeHandler = (i: number) => (e: React.ChangeEvent<HTMLInputElement>) => {
     const targetValue: string = e.target.value;
-    const newMeters = meters.map((meter, j) => ( i === j ? coerceToIntOrEmpty(targetValue) : meter ));
+    const newMeters = meters.map((meter, j) => ( i === j ? coerceToNumericOrEmpty(targetValue) : meter ));
     setMeters(newMeters);
   };
 
@@ -68,6 +107,40 @@ function App() {
   const playHandler = () => {
     setIsPlaying(prevState => !prevState);
   };
+
+  const metersChangeHandler = (beats: number[]) => () => {
+    setMeters([...padArray(intArrayToStringArray(beats))]);
+    setEnableds(zeroToBefore(metersCount).map((i) => i < beats.length));
+  };
+
+  // 重複なしでcount個の2~maxの範囲の乱数を取り出す
+  const randomMetersChangeHandler = (count: number, max: number) => () => {
+    const randomNums: number[] = [];
+
+    while(randomNums.length < count && randomNums.length < max - 1) {
+      let num = Math.floor(Math.random() * (max - 2 + 1)) + 2;
+      if(!randomNums.includes(num)) {
+        randomNums.push(num);
+      }
+    }
+
+    setMeters(padArray(intArrayToStringArray(randomNums.sort((a, b) => a - b))));
+    setEnableds(zeroToBefore(metersCount).map((i) => i < count))
+  }
+
+  const upsideDownHandler = () => {
+    setMeters([...meters.reverse()]);
+    setEnableds([...enableds.reverse()]);
+  }
+
+  const swapHandler = (from: number, to: number) => () => {
+    setMeters(swap(meters, from, to));
+    setEnableds(swap(enableds, from, to));
+  }
+
+  const generatePresetButton = (beats: number[]) => (
+    <button key={beats.join(",")} onClick={metersChangeHandler(beats)}>{ beats.join(",") }</button>
+  );
 
   // シンセ設定
   useEffect(() => {
@@ -177,7 +250,7 @@ function App() {
             <div key={`meter-row-${i}`} className="meter-row">
               <div className="input-wrapper">
                 <input type="checkbox" checked={enabled} onChange={enabledChangeHandler(i)}></input>
-                <input type="string" value={coerceToIntOrEmpty(meters[i])} disabled={!enabled} className="denominator" onChange={meterChangeHandler(i)}></input>
+                <input type="string" value={coerceToNumericOrEmpty(meters[i])} disabled={!enabled} className="denominator" onChange={meterChangeHandler(i)}></input>
               </div>
               <div className="beats-wrapper">
                 {
@@ -202,6 +275,37 @@ function App() {
             })
           }
         </select>
+      </div>
+      <div id="buttons-wrapper">
+        <div id="preset-buttons">
+          <h2>プリセット</h2>
+          {
+            beatPresets.map((presets, i) => (
+              <div key={`preset-row-${i}`} className="beats-line">
+                {
+                  presets.map((preset: number[]) => (
+                    generatePresetButton(preset)
+                  ))
+                }
+              </div>
+            ))
+          }
+          <button onClick={randomMetersChangeHandler(4, 8)}>重複なしランダム(4個、2~8)</button>
+          <button onClick={randomMetersChangeHandler(4, 12)}>重複なしランダム(4個、2~12)</button>
+          <button onClick={randomMetersChangeHandler(5, 12)}>重複なしランダム(5個、2~12)</button>
+        </div>
+        <div id="other-buttons">
+          <h2>その他操作</h2>
+          <div>
+            <button onClick={upsideDownHandler}>上下を入れ替える</button>
+          </div>
+          <div>
+            <button onClick={swapHandler(0, 1)}>1番目と2番目を入れ替える</button>
+            <button onClick={swapHandler(1, 2)}>2番目と3番目を入れ替える</button>
+            <button onClick={swapHandler(2, 3)}>3番目と4番目を入れ替える</button>
+            <button onClick={swapHandler(3, 4)}>4番目と5番目を入れ替える</button>
+          </div>
+        </div>
       </div>
     </div>
   );

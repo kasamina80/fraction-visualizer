@@ -75,3 +75,15 @@ h1 {
     }
   }
 }
+
+#buttons-wrapper {
+  display: flex;
+  #preset-buttons {
+    flex-grow: 1;
+    max-width: 50%;
+  }
+  #other-buttons {
+    flex-grow: 1;
+    max-width: 50%;
+  }
+}
